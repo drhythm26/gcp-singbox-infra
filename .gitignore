@@ -1,0 +1,24 @@
+# 本地插件
+**/.terraform/*
+
+# 状态文件（绝对不能上传）
+*.tfstate
+*.tfstate.*
+
+# 变量赋值文件（含密钥）
+*.tfvars
+*.tfvars.json
+
+# 崩溃日志
+crash.log
+
+# 覆盖文件
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI 配置
+.terraformrc
+terraform.rc
+
