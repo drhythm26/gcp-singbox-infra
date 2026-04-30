@@ -70,7 +70,7 @@ fi
 install -d -m 0755 -o root -g root "$INSTALL_ROOT"
 install -d -m 0755 -o root -g root "$RELEASE_DIR"
 install -d -m 0750 -o root -g "$SERVICE_GROUP" "$CONFIG_DIR"
-install -d -m 0755 -o root -g "$SERVICE_GROUP" "$CERT_DIR"
+install -d -m 0750 -o root -g "$SERVICE_GROUP" "$CERT_DIR"
 install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_GROUP" "$DATA_DIR"
 
 
@@ -90,3 +90,32 @@ ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
 ln -sfn "${CURRENT_LINK}/sing-box" "$BIN_LINK"
 rm -rf "$TMP_DIR"
 sing-box version
+
+log "生成或读取密钥文件"
+
+if [[ ! -f "SECRET_FILE" ]]; then
+    KEYPAIR="$("$BIN_LINK" generate reality-keypair)"
+    UUID="$("$BIN_LINK" generate uuid)"
+    REALITY_PRIVATE_KEY="$(echo "$KEYPAIR" | awk '/PrivateKey/ {print $2}')"
+    REALITY_PUBLIC_KEY="$(echo "$KEYPAIR" | awk '/PublicKey/ {print $2}')"
+    SHORT_ID="$(openssl range -hex 8)"
+    HY2_PASSWORD="$(openssl rand -base 24)"
+    cat > "$SECRET_FILE" << 'EOF'
+UUID=${UUID}
+REALITY_PRIVATE_KEY=${REALITY_PRIVATE_KEY}
+REALITY_PUBLIC_KEY=${REALITY_BULIC_KEY}
+SHORT_ID=${SHORT_ID}
+HY2_PASSWORD=${HY2_PASSWORD}
+EOF
+
+    chown root:root "$SECRET_FILE"
+    chmod 0600 "$SECRET_FILE"
+else
+    log "密钥文件已存在, 复用: $SECRET_FILE"
+fi
+
+source "SECRETE_FILE"
+log "UUID: $UUID"
+log "Reality public key: $REALITY_PUBLIC_KEY"
+log "Short ID: $SHORT_ID"
+log "HY2 Password: $HY2_PASSWORD"
