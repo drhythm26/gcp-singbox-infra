@@ -197,3 +197,72 @@ EOF
 chown root:"${SERVICE_GROUP}" "$CONFIG_FILE"
 chmod 0640 "$CONFIG_FILE"
 
+log "生成 systemd service"
+cat > "$SERVICE_FILE" << EOF
+[Unit]
+Description=sing-box service
+Documentation=https://sing-box.sagernet.org
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+Group=${SERVICE_GROUP}
+WorkingDirectory=${DATA_DIR}
+ExecStart=${BIN_LINK} run -c ${CONFIG_FILE}
+Restart=on-failure
+RestartSec=10s
+LimitNOFILE=1048576
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=${DATA_DIR}
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+chown root:root "$SERVICE_FILE"
+chmod 0644 "$SERVICE_FILE"
+
+log "检查配置并启动服务"
+sudo -u "$SERVICE_USER" "$BIN_LINK" check -c "$CONFIG_FILE"
+systemctl daemon-reload
+systemctl enable --now sing-box
+systemctl restart sing-box
+sleep 2
+systemctl is-active --quiet sing-box
+ss -lntp | grep -q ':443'
+ss -lnup | grep -q ':8443'
+PROCESS_USER="$(ps -o user= -C sing-box | head -n 1 | xargs)"
+if [[ "$PROCESS_USER" != "$SERVICE_USER" ]]; then
+    error "sing-box 进程用户异常: $PROCESS_USER"
+fi
+log "sing-box 服务启动成功"
+
+urlencode() {
+    python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1"
+}
+
+REALITY_TAG="$(urlencode "${NODE_NAME}-reality")"
+HY2_TAG="$(urlencode "${NODE_NAME}-hy2")"
+HY2_PASSWORD=$(urlencode "$HY2_PASSWORD")
+REALITY_PUBLIC_KEY=$(urlencode "$REALITY_PUBLIC_KEY")
+
+REALITY_LINK="vless://${UUID}@${PUBLIC_IP}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=bing.com&fp=chrome&pbk=${REALITY_PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#${REALITY_TAG}"
+HY2_LINK="hysteria2://${HY2_PASSWORD}@${PUBLIC_IP}:8443/?insecure=1&sni=bing.com#${HY2_TAG}"
+
+echo
+echo "========== Client Links =========="
+echo
+echo "[Reality / VLESS]"
+echo "$REALITY_LINK"
+echo
+echo "[Hysteria2]"
+echo "$HY2_LINK"
+echo
+echo "=================================="
