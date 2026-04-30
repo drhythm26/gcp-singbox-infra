@@ -93,17 +93,17 @@ sing-box version
 
 log "生成或读取密钥文件"
 
-if [[ ! -f "SECRET_FILE" ]]; then
+if [[ ! -f "$SECRET_FILE" ]]; then
     KEYPAIR="$("$BIN_LINK" generate reality-keypair)"
     UUID="$("$BIN_LINK" generate uuid)"
     REALITY_PRIVATE_KEY="$(echo "$KEYPAIR" | awk '/PrivateKey/ {print $2}')"
     REALITY_PUBLIC_KEY="$(echo "$KEYPAIR" | awk '/PublicKey/ {print $2}')"
-    SHORT_ID="$(openssl range -hex 8)"
-    HY2_PASSWORD="$(openssl rand -base 24)"
-    cat > "$SECRET_FILE" << 'EOF'
+    SHORT_ID="$(openssl rand -hex 8)"
+    HY2_PASSWORD="$(openssl rand -base64 24)"
+    cat > "$SECRET_FILE" << EOF
 UUID=${UUID}
 REALITY_PRIVATE_KEY=${REALITY_PRIVATE_KEY}
-REALITY_PUBLIC_KEY=${REALITY_BULIC_KEY}
+REALITY_PUBLIC_KEY=${REALITY_PUBLIC_KEY}
 SHORT_ID=${SHORT_ID}
 HY2_PASSWORD=${HY2_PASSWORD}
 EOF
@@ -114,8 +114,23 @@ else
     log "密钥文件已存在, 复用: $SECRET_FILE"
 fi
 
-source "SECRETE_FILE"
+source "$SECRET_FILE"
 log "UUID: $UUID"
 log "Reality public key: $REALITY_PUBLIC_KEY"
 log "Short ID: $SHORT_ID"
-log "HY2 Password: $HY2_PASSWORD"
+
+log "生成或读取 HY2 自签证书"
+
+if [[ ! -f "${CERT_DIR}/hy2.key" || ! -f "${CERT_DIR}/hy2.crt" ]]; then
+    openssl req -x509 -newkey rsa:2048 -nodes \
+        -keyout "${CERT_DIR}/hy2.key" \
+        -out "${CERT_DIR}/hy2.crt" \
+        -days 3650 -subj "/CN=bing.com"
+    chown root:"$SERVICE_GROUP" "${CERT_DIR}/hy2.key"
+    chmod 0640 "${CERT_DIR}/hy2.key"
+    chown root:root "${CERT_DIR}/hy2.crt"
+    chmod 0644 "${CERT_DIR}/hy2.crt"
+else
+    log "HY2 证书已存在, 复用: ${CERT_DIR}/hy2.crt"
+fi
+
