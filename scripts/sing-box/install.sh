@@ -50,7 +50,7 @@ SERVICE_USER="sing-box"
 SERVICE_GROUP="sing-box"
 INSTALL_ROOT="/usr/local/sing-box"
 RELEASE_DIR="${INSTALL_ROOT}/releases/${VERSION}"
-CURRENT_DIR="${INSTALL_ROOT}/current"
+CURRENT_LINK="${INSTALL_ROOT}/current"
 BIN_LINK="/usr/local/bin/sing-box"
 CONFIG_DIR="/etc/sing-box"
 CERT_DIR="${CONFIG_DIR}/certs"
@@ -69,6 +69,24 @@ fi
 
 install -d -m 0755 -o root -g root "$INSTALL_ROOT"
 install -d -m 0755 -o root -g root "$RELEASE_DIR"
-install -d -m 0750 -o root -g "$SERVICE_USRE" "$CONFIG_DIR"
-install -d -m 0755 -o root -g "$SERVICE_USER" "$CERT_DIR"
-install -d -m 0750 -o "$SERVICE_USER" "$SERVICE_USER" "$DATA_DIR"
+install -d -m 0750 -o root -g "$SERVICE_GROUP" "$CONFIG_DIR"
+install -d -m 0755 -o root -g "$SERVICE_GROUP" "$CERT_DIR"
+install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_GROUP" "$DATA_DIR"
+
+
+log "下载并安装sing-box"
+
+TMP_DIR="$(mktemp -d)"
+ARCHIVE_FILE="${TMP_DIR}/sing-box.tar.gz"
+
+curl -fsSL "$DOWNLOAD_URL" -o "$ARCHIVE_FILE"
+
+tar -xzf "$ARCHIVE_FILE" -C "$TMP_DIR"
+
+install -m 0755 -o root -g root \
+    "${TMP_DIR}/sing-box-${VERSION}-linux-${SING_BOX_ARCH}/sing-box" \
+    "${RELEASE_DIR}/sing-box"
+ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+ln -sfn "${CURRENT_LINK}/sing-box" "$BIN_LINK"
+rm -rf "$TMP_DIR"
+sing-box version
