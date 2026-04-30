@@ -45,3 +45,30 @@ DOWNLOAD_URL="https://github.com/SagerNet/sing-box/releases/download/v${VERSION}
 log "系统架构: $ARCH"
 log "sing-box包架构: $SING_BOX_ARCH"
 log "url: $DOWNLOAD_URL"
+
+SERVICE_USER="sing-box"
+SERVICE_GROUP="sing-box"
+INSTALL_ROOT="/usr/local/sing-box"
+RELEASE_DIR="${INSTALL_ROOT}/releases/${VERSION}"
+CURRENT_DIR="${INSTALL_ROOT}/current"
+BIN_LINK="/usr/local/bin/sing-box"
+CONFIG_DIR="/etc/sing-box"
+CERT_DIR="${CONFIG_DIR}/certs"
+CONFIG_FILE="${CONFIG_DIR}/config.json"
+SECRET_FILE="${CONFIG_DIR}/secrets.env"
+SERVICE_FILE="/etc/systemd/system/sing-box.service"
+DATA_DIR="/var/lib/sing-box"
+
+log "创建服务账号及目录"
+if ! id "$SERVICE_USER" >/dev/null 2>&1; then
+    useradd --system --user-group \
+        --home-dir "$DATA_DIR" \
+        --create-home \
+        --shell /usr/sbin/nologin "$SERVICE_USER"
+fi
+
+install -d -m 0755 -o root -g root "$INSTALL_ROOT"
+install -d -m 0755 -o root -g root "$RELEASE_DIR"
+install -d -m 0750 -o root -g "$SERVICE_USRE" "$CONFIG_DIR"
+install -d -m 0755 -o root -g "$SERVICE_USER" "$CERT_DIR"
+install -d -m 0750 -o "$SERVICE_USER" "$SERVICE_USER" "$DATA_DIR"
