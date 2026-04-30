@@ -134,3 +134,66 @@ else
     log "HY2 证书已存在, 复用: ${CERT_DIR}/hy2.crt"
 fi
 
+log "生成 sing-box 配置文件"
+cat > "$CONFIG_FILE" << EOF
+{
+    "log": {
+        "level": "info"
+    },
+    "inbounds": [
+        {
+            "type": "vless",
+            "tag": "reality-in",
+            "listen": "0.0.0.0",
+            "listen_port": 443,
+            "users": [
+                {
+                    "uuid": "${UUID}",
+                    "flow": "xtls-rprx-vision"
+                }
+            ],
+            "tls": {
+                "enabled": true,
+                "server_name": "www.microsoft.com",
+                "reality": {
+                    "enabled": true,
+                    "handshake": {
+                        "server": "www.mirosoft.com",
+                        "server_port": 443
+                    },
+                    "private_key": "${REALITY_PRIVATE_KEY}",
+                    "short_id": [
+                        "$SHORT_ID"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "hysteria2",
+            "tag": "hy2-in",
+            "listen": "0.0.0.0",
+            "listen_port": 8443,
+            "users": [
+                {
+                    "password": "$HY2_PASSWORD"
+                }
+            ],
+            "tls": {
+                "enabled": true,
+                "certificate_path": "${CERT_DIR}/hy2.crt",
+                "key_path": "${CERT_DIR}/hy2.key"
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "direct",
+            "tag": "direct"
+        }
+    ]
+}
+EOF
+
+chown root:"${SERVICE_GROUP}" "$CONFIG_FILE"
+chmod 0640 "$CONFIG_FILE"
+
