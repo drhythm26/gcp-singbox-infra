@@ -27,7 +27,7 @@ resource "google_compute_instance" "hk_node" {
     }
   }
   metadata = {
-    ssh-key = "${var.ssh_user}:${var.ssh_public_key_path}"
+    ssh-key = "${var.ssh_user}:${file(var.ssh_public_key_path)}"
   }
 }
 
@@ -50,7 +50,7 @@ resource "google_compute_instance" "sg_node" {
     }
   }
   metadata = {
-    ssh-key = "${var.ssh_user}/${var.ssh_public_key_path}"
+    ssh-key = "${var.ssh_user}:${file(var.ssh_public_key_path)}"
   }
 }
 
